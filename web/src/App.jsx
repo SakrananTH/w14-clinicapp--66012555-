@@ -29,6 +29,39 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
+export const THAI_MONTHS = [
+  { val: '01', name: 'มกราคม', short: 'ม.ค.' },
+  { val: '02', name: 'กุมภาพันธ์', short: 'ก.พ.' },
+  { val: '03', name: 'มีนาคม', short: 'มี.ค.' },
+  { val: '04', name: 'เมษายน', short: 'เม.ย.' },
+  { val: '05', name: 'พฤษภาคม', short: 'พ.ค.' },
+  { val: '06', name: 'มิถุนายน', short: 'มิ.ย.' },
+  { val: '07', name: 'กรกฎาคม', short: 'ก.ค.' },
+  { val: '08', name: 'สิงหาคม', short: 'ส.ค.' },
+  { val: '09', name: 'กันยายน', short: 'ก.ย.' },
+  { val: '10', name: 'ตุลาคม', short: 'ต.ค.' },
+  { val: '11', name: 'พฤศจิกายน', short: 'พ.ย.' },
+  { val: '12', name: 'ธันวาคม', short: 'ธ.ค.' }
+];
+
+export const formatDmy = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('T')[0].split('-');
+  if (parts.length < 3) return String(dateStr);
+  const [y, m, d] = parts;
+  return `${d}/${m}/${y}`;
+};
+
+export const formatThaiDate = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('T')[0].split('-');
+  if (parts.length < 3) return String(dateStr);
+  const [y, m, d] = parts;
+  const mObj = THAI_MONTHS.find(item => item.val === m);
+  const thaiYear = parseInt(y, 10) + 543;
+  return `${parseInt(d, 10)} ${mObj ? mObj.name : m} ${thaiYear}`;
+};
+
 export default function App() {
   const dateInputRef = useRef(null);
   const [step, setStep] = useState(1);
@@ -67,39 +100,10 @@ export default function App() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Helper date calculations & Thai date formatters
+  // Helper date calculations
   const todayStr = new Date().toISOString().split('T')[0];
   const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
   const dayAfterTomorrowStr = new Date(Date.now() + 172800000).toISOString().split('T')[0];
-
-  const THAI_MONTHS = [
-    { val: '01', name: 'มกราคม', short: 'ม.ค.' },
-    { val: '02', name: 'กุมภาพันธ์', short: 'ก.พ.' },
-    { val: '03', name: 'มีนาคม', short: 'มี.ค.' },
-    { val: '04', name: 'เมษายน', short: 'เม.ย.' },
-    { val: '05', name: 'พฤษภาคม', short: 'พ.ค.' },
-    { val: '06', name: 'มิถุนายน', short: 'มิ.ย.' },
-    { val: '07', name: 'กรกฎาคม', short: 'ก.ค.' },
-    { val: '08', name: 'สิงหาคม', short: 'ส.ค.' },
-    { val: '09', name: 'กันยายน', short: 'ก.ย.' },
-    { val: '10', name: 'ตุลาคม', short: 'ต.ค.' },
-    { val: '11', name: 'พฤศจิกายน', short: 'พ.ย.' },
-    { val: '12', name: 'ธันวาคม', short: 'ธ.ค.' }
-  ];
-
-  const formatDmy = (dateStr) => {
-    if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-');
-    return `${d}/${m}/${y}`;
-  };
-
-  const formatThaiDate = (dateStr) => {
-    if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-');
-    const mObj = THAI_MONTHS.find(item => item.val === m);
-    const thaiYear = parseInt(y, 10) + 543;
-    return `${parseInt(d, 10)} ${mObj ? mObj.name : m} ${thaiYear}`;
-  };
 
   // Helper icon for services
   const getServiceIcon = (type) => {
