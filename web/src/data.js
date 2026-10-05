@@ -59,52 +59,36 @@ export const INITIAL_STAFF = [
     name: 'ช่างจอย',
     fullName: 'ช่างจอย',
     nickname: 'จอย',
-    title: 'ช่างทำเล็บอาวุโส',
-    experience: 'ประสบการณ์ 6 ปี',
-    rating: 5.0,
-    reviewCount: 142,
+    title: 'ช่างประจำร้าน',
     initials: 'จอย',
-    avatarBg: 'bg-rose-100 text-rose-700 border border-rose-200',
-    specialties: 'ลายหินอ่อน, ต่อเล็บ PVC, สปาออร์แกนิก'
+    avatarBg: 'bg-rose-100 text-rose-700 border border-rose-200'
   },
   {
     id: 2,
     name: 'ช่างมิน',
     fullName: 'ช่างมิน',
     nickname: 'มิน',
-    title: 'ช่างเพ้นท์ลายเกาหลี',
-    experience: 'ประสบการณ์ 4 ปี',
-    rating: 4.9,
-    reviewCount: 98,
+    title: 'ช่างประจำร้าน',
     initials: 'มิน',
-    avatarBg: 'bg-pink-100 text-pink-700 border border-pink-200',
-    specialties: 'งานมินิมอลเกาหลี, ติดชาร์มคริสตัล, ไล่สี Ombre'
+    avatarBg: 'bg-pink-100 text-pink-700 border border-pink-200'
   },
   {
     id: 3,
     name: 'ช่างแพรว',
     fullName: 'ช่างแพรว',
     nickname: 'แพรว',
-    title: 'ช่างต่อเล็บมืออาชีพ',
-    experience: 'ประสบการณ์ 5 ปี',
-    rating: 4.9,
-    reviewCount: 115,
+    title: 'ช่างประจำร้าน',
     initials: 'แพรว',
-    avatarBg: 'bg-purple-100 text-purple-700 border border-purple-200',
-    specialties: 'ต่อเล็บโพลีเจล, ทรงคอฟฟิน, เพ้นท์การ์ตูน 3D'
+    avatarBg: 'bg-purple-100 text-purple-700 border border-purple-200'
   },
   {
     id: 4,
     name: 'ช่างพลอย',
     fullName: 'ช่างพลอย',
     nickname: 'พลอย',
-    title: 'ช่างสปามือและเท้า',
-    experience: 'ประสบการณ์ 3 ปี',
-    rating: 4.8,
-    reviewCount: 86,
+    title: 'ช่างประจำร้าน',
     initials: 'พลอย',
-    avatarBg: 'bg-amber-100 text-amber-700 border border-amber-200',
-    specialties: 'เคลียร์หนังละเอียด, สปาผิวเนียนนุ่ม, ทาสีลูกแก้ว Cat Eye'
+    avatarBg: 'bg-amber-100 text-amber-700 border border-amber-200'
   }
 ];
 

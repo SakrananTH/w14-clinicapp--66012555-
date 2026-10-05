@@ -54,25 +54,16 @@ apiRouter.get('/staff', async (_req, res, next) => {
       ORDER BY id
     `);
 
-    // Clean data to pure Thai names and titles (strip English in parentheses)
+    // Clean data to pure Thai names (strip English in parentheses, no expertise)
     const staffList = result.recordset.map(st => {
       const thaiName = (st.name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim();
       const nick = st.nickname || thaiName.replace('ช่าง', '').trim();
-      
-      let thaiTitle = 'ช่างประจำร้าน';
-      if (nick === 'จอย' || thaiName.includes('จอย')) thaiTitle = 'ช่างทำเล็บอาวุโส';
-      else if (nick === 'มิน' || thaiName.includes('มิน')) thaiTitle = 'ช่างเพ้นท์ลายเกาหลี';
-      else if (nick === 'แพรว' || thaiName.includes('แพรว')) thaiTitle = 'ผู้เชี่ยวชาญการต่อเล็บ';
-      else if (nick === 'พลอย' || thaiName.includes('พลอย')) thaiTitle = 'ช่างสปามือและเท้า';
-      else if (st.title) {
-        thaiTitle = st.title.replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim();
-      }
 
       return {
         ...st,
         name: thaiName,
         nickname: nick,
-        title: thaiTitle,
+        title: 'ช่างประจำร้าน',
         initials: nick.slice(0, 2)
       };
     });

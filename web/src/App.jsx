@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { INITIAL_SERVICES, INITIAL_STAFF, TIME_SLOTS } from './data';
 import {
   IconSparkles,
@@ -30,6 +30,7 @@ import {
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 export default function App() {
+  const dateInputRef = useRef(null);
   const [step, setStep] = useState(1);
   const [services, setServices] = useState(INITIAL_SERVICES);
   const [staffList, setStaffList] = useState(INITIAL_STAFF);
@@ -514,42 +515,40 @@ export default function App() {
                   {staffList.map(st => {
                     const isSelected = selectedStaff?.id === st.id;
                     const thaiName = (st.name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim();
-                    const thaiTitle = (st.title || st.nickname || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim();
                     const thaiInitials = (st.nickname || thaiName.replace('ช่าง', '')).slice(0, 2);
                     return (
                       <div
                         key={st.id}
-                        onClick={() => setSelectedStaff({ ...st, name: thaiName, title: thaiTitle })}
-                        className={`flat-card p-3.5 rounded-xl cursor-pointer text-center flex flex-col items-center justify-between ${
+                        onClick={() => setSelectedStaff({ ...st, name: thaiName, title: 'ช่างประจำร้าน' })}
+                        className={`flat-card p-3.5 rounded-xl cursor-pointer text-center flex flex-col items-center justify-center gap-2 ${
                           isSelected ? 'active ring-1 ring-rose-500' : ''
                         }`}
                       >
-                        <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs mb-2 ${
+                        <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs ${
                           st.avatarBg || 'bg-stone-100 text-stone-700 border border-stone-200'
                         }`}>
                           {thaiInitials}
                         </div>
                         <h4 className="font-bold text-xs text-stone-800">{thaiName}</h4>
-                        <p className="text-[11px] text-rose-600 font-medium">{thaiTitle}</p>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* 2. Date Selection (วัน / เดือน / ปี) */}
+              {/* 2. Date Selection (ปฏิทินสากล วันที่/เดือน/ปี) */}
               <div className="p-3.5 bg-white border border-stone-200 rounded-xl space-y-2.5">
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-semibold text-stone-700 flex items-center gap-1.5">
                     <IconCalendar className="w-3.5 h-3.5 text-stone-500" />
-                    <span>วันที่นัดหมาย (วัน / เดือน / ปี)</span>
+                    <span>วันที่นัดหมาย (วันที่/เดือน/ปี)</span>
                   </label>
                   <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg">
-                    {formatDmy(selectedDate)} — {formatThaiDate(selectedDate)}
+                    {formatDmy(selectedDate)}
                   </span>
                 </div>
 
-                {/* Quick Selection Buttons */}
+                {/* Quick Selection Buttons & Standard Universal Calendar */}
                 <div className="flex flex-wrap items-center gap-2">
                   {[
                     { label: 'วันนี้', dateVal: todayStr },
@@ -569,55 +568,37 @@ export default function App() {
                       {q.label}
                     </button>
                   ))}
-                </div>
 
-                {/* 3 Dropdown Selectors: วัน (Day) / เดือน (Month) / ปี (Year) */}
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  <div>
-                    <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">วัน (Day)</label>
-                    <select
-                      value={selectedDate.split('-')[2] || '01'}
+                  {/* Standard Calendar Date Picker (ปฏิทินสากล วันที่/เดือน/ปี) */}
+                  <div
+                    onClick={() => {
+                      try {
+                        dateInputRef.current?.showPicker?.();
+                      } catch {
+                        dateInputRef.current?.focus();
+                      }
+                    }}
+                    className="relative inline-flex items-center cursor-pointer group"
+                    title="คลิกเพื่อเลือกวันที่จากปฏิทินสากล (วัน/เดือน/ปี)"
+                  >
+                    <input
+                      type="text"
+                      readOnly
+                      value={formatDmy(selectedDate)}
+                      className="w-36 px-3 py-1.5 rounded-lg border border-stone-200 group-hover:border-rose-300 bg-white text-xs font-medium text-stone-800 cursor-pointer focus:border-rose-500 focus:outline-none pr-8 transition-colors"
+                    />
+                    <IconCalendar className="w-4 h-4 text-stone-400 group-hover:text-rose-500 absolute right-2.5 pointer-events-none transition-colors" />
+                    <input
+                      ref={dateInputRef}
+                      type="date"
+                      value={selectedDate}
+                      min={todayStr}
                       onChange={e => {
-                        const parts = selectedDate.split('-');
-                        setSelectedDate(`${parts[0]}-${parts[1]}-${e.target.value}`);
+                        if (e.target.value) setSelectedDate(e.target.value);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white text-xs font-medium text-stone-800 focus:border-rose-500 focus:outline-none"
-                    >
-                      {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map(d => (
-                        <option key={d} value={d}>วันที่ {Number(d)}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">เดือน (Month)</label>
-                    <select
-                      value={selectedDate.split('-')[1] || '01'}
-                      onChange={e => {
-                        const parts = selectedDate.split('-');
-                        setSelectedDate(`${parts[0]}-${e.target.value}-${parts[2]}`);
-                      }}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white text-xs font-medium text-stone-800 focus:border-rose-500 focus:outline-none"
-                    >
-                      {THAI_MONTHS.map(m => (
-                        <option key={m.val} value={m.val}>{m.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">ปี (Year)</label>
-                    <select
-                      value={selectedDate.split('-')[0] || '2026'}
-                      onChange={e => {
-                        const parts = selectedDate.split('-');
-                        setSelectedDate(`${e.target.value}-${parts[1]}-${parts[2]}`);
-                      }}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white text-xs font-medium text-stone-800 focus:border-rose-500 focus:outline-none"
-                    >
-                      <option value="2026">2569 (2026)</option>
-                      <option value="2027">2570 (2027)</option>
-                    </select>
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      aria-label="เลือกวันที่จากปฏิทินสากล"
+                    />
                   </div>
                 </div>
               </div>
@@ -1170,7 +1151,7 @@ function FlatSummarySidebar({ service, staff, date, slot, step, onNext, nextDisa
             </div>
             <div>
               <p className="font-semibold text-stone-800">{(staff?.name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim()}</p>
-              <p className="text-[10px] text-stone-400">{(staff?.title || staff?.nickname || 'ช่างประจำร้าน').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim()}</p>
+              <p className="text-[10px] text-stone-400">ช่างประจำร้าน</p>
             </div>
           </div>
           <span className="text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-600 border border-stone-200 font-medium">
@@ -1178,12 +1159,12 @@ function FlatSummarySidebar({ service, staff, date, slot, step, onNext, nextDisa
           </span>
         </div>
 
-        {/* Selected Date & Time (วัน / เดือน / ปี) */}
+        {/* Selected Date & Time (วันที่ / เดือน / ปี) */}
         <div className="flex items-center justify-between p-2.5 bg-white border border-stone-200 rounded-xl text-xs">
           <div className="flex items-center gap-2">
             <IconCalendar className="w-4 h-4 text-stone-500" />
             <div>
-              <p className="font-semibold text-stone-800">{formatDmy(date)} ({formatThaiDate(date)})</p>
+              <p className="font-semibold text-stone-800">{formatDmy(date)}</p>
               <p className="text-[10px] text-stone-400">{slot ? `เวลา ${slot} น.` : 'ยังไม่ระบุรอบเวลา'}</p>
             </div>
           </div>
