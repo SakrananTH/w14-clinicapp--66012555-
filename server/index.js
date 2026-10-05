@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
@@ -8,22 +10,20 @@ import { getSqlPool } from './db.js';
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicDir = path.join(__dirname, 'public');
+
 app.use(cors());
 app.use(express.json());
 
 // ---------------------------------------------------------------------------
-// 1. Health check
+// 1. API Router (Mounted at both /api and /)
 // ---------------------------------------------------------------------------
-app.get('/', (_req, res) => {
-  res.json({ ok: true, service: 'glamour-nails-api' });
-});
-
-// ---------------------------------------------------------------------------
-// 2. Glamour Nails Studio API Endpoints
-// ---------------------------------------------------------------------------
+const apiRouter = express.Router();
 
 // GET /services - List all nail salon services
-app.get('/services', async (_req, res, next) => {
+apiRouter.get('/services', async (_req, res, next) => {
   try {
     const pool = await getSqlPool();
     const result = await pool.request().query(`
@@ -44,7 +44,7 @@ app.get('/services', async (_req, res, next) => {
 });
 
 // GET /staff - List all salon staff
-app.get('/staff', async (_req, res, next) => {
+apiRouter.get('/staff', async (_req, res, next) => {
   try {
     const pool = await getSqlPool();
     const result = await pool.request().query(`
@@ -58,7 +58,7 @@ app.get('/staff', async (_req, res, next) => {
 });
 
 // GET /bookings - List all nail salon bookings
-app.get('/bookings', async (_req, res, next) => {
+apiRouter.get('/bookings', async (_req, res, next) => {
   try {
     const pool = await getSqlPool();
     const result = await pool.request().query(`
@@ -88,7 +88,7 @@ app.get('/bookings', async (_req, res, next) => {
 });
 
 // POST /bookings - Create a new nail booking
-app.post('/bookings', async (req, res, next) => {
+apiRouter.post('/bookings', async (req, res, next) => {
   const {
     service_id,
     staff_id,
@@ -139,7 +139,7 @@ app.post('/bookings', async (req, res, next) => {
 });
 
 // DELETE /bookings/:id - Cancel/delete a booking
-app.delete('/bookings/:id', async (req, res, next) => {
+apiRouter.delete('/bookings/:id', async (req, res, next) => {
   const bookingId = Number(req.params.id);
   if (!Number.isInteger(bookingId) || bookingId <= 0) {
     return res.status(400).json({ error: 'invalid_id', message: 'Booking ID must be a positive integer' });
@@ -159,11 +159,11 @@ app.delete('/bookings/:id', async (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
-// 3. W13 Clinic Lab Rubric Compatibility Endpoints (/doctors & /appointments)
+// 2. W13 Clinic Lab Rubric Compatibility Endpoints (/doctors & /appointments)
 // ---------------------------------------------------------------------------
 
 // GET /doctors
-app.get('/doctors', async (_req, res, next) => {
+apiRouter.get('/doctors', async (_req, res, next) => {
   try {
     const pool = await getSqlPool();
     const r = await pool.request().query('SELECT id, name, specialty FROM doctors ORDER BY name');
@@ -172,7 +172,7 @@ app.get('/doctors', async (_req, res, next) => {
 });
 
 // GET /appointments
-app.get('/appointments', async (_req, res, next) => {
+apiRouter.get('/appointments', async (_req, res, next) => {
   try {
     const pool = await getSqlPool();
     const r = await pool.request().query(`
@@ -185,7 +185,7 @@ app.get('/appointments', async (_req, res, next) => {
 });
 
 // POST /appointments
-app.post('/appointments', async (req, res, next) => {
+apiRouter.post('/appointments', async (req, res, next) => {
   const { doctor_id, patient_name, slot } = req.body || {};
   if (!doctor_id || !patient_name || !slot) {
     return res.status(400).json({ error: 'doctor_id, patient_name, slot are required' });
@@ -206,7 +206,7 @@ app.post('/appointments', async (req, res, next) => {
 });
 
 // DELETE /appointments/:id
-app.delete('/appointments/:id', async (req, res, next) => {
+apiRouter.delete('/appointments/:id', async (req, res, next) => {
   const appointmentId = Number(req.params.id);
   if (!Number.isInteger(appointmentId) || appointmentId <= 0) {
     return res.status(400).json({ error: 'invalid_id' });
@@ -221,6 +221,49 @@ app.delete('/appointments/:id', async (req, res, next) => {
     }
     res.status(204).end();
   } catch (e) { next(e); }
+});
+
+// ---------------------------------------------------------------------------
+// 3. Mount Routes & Static Frontend UI
+// ---------------------------------------------------------------------------
+
+// Mount API routes under /api and root
+app.use('/api', apiRouter);
+
+// Health check / root handler
+app.get(['/', '/health', '/api/health'], (req, res, next) => {
+  const acceptsHtml = req.accepts('html');
+  const acceptsJson = req.accepts('json');
+  const isHealth = req.path === '/health' || req.path === '/api/health';
+  
+  if (isHealth || !acceptsHtml || (acceptsJson && !req.headers.accept?.includes('text/html'))) {
+    return res.json({ ok: true, service: 'glamour-nails-api' });
+  }
+  const indexPath = path.join(publicDir, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.json({ ok: true, service: 'glamour-nails-api' });
+});
+
+// Mount endpoints at root level as well for compatibility
+app.use('/', apiRouter);
+
+// Serve static frontend build assets (JS, CSS, SVGs)
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+}
+
+// Fallback for SPA HTML5 client-side navigation
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.headers.accept?.includes('application/json')) {
+    return next();
+  }
+  const indexPath = path.join(publicDir, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  next();
 });
 
 // ---------------------------------------------------------------------------

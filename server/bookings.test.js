@@ -99,10 +99,18 @@ test('POST /appointments rejects incomplete fields (400)', async () => {
 });
 
 test('GET /services returns 503 without DB connection string', async () => {
-  await withServer(async base => {
-    const response = await fetch(`${base}/services`);
-    assert.equal(response.status, 503);
-    const body = await response.json();
-    assert.equal(body.error, 'database_not_configured');
-  });
+  const originalConn = process.env.AZURE_SQL_CONNECTION_STRING;
+  delete process.env.AZURE_SQL_CONNECTION_STRING;
+  try {
+    await withServer(async base => {
+      const response = await fetch(`${base}/services`);
+      assert.equal(response.status, 503);
+      const body = await response.json();
+      assert.equal(body.error, 'database_not_configured');
+    });
+  } finally {
+    if (originalConn) {
+      process.env.AZURE_SQL_CONNECTION_STRING = originalConn;
+    }
+  }
 });
