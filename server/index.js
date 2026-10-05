@@ -43,7 +43,7 @@ apiRouter.get('/services', async (_req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// GET /staff - List all salon staff
+// GET /staff - List all salon staff (Pure Thai names & titles, no English)
 apiRouter.get('/staff', async (_req, res, next) => {
   try {
     const pool = await getSqlPool();
@@ -53,7 +53,31 @@ apiRouter.get('/staff', async (_req, res, next) => {
       FROM staff 
       ORDER BY id
     `);
-    res.json(result.recordset);
+
+    // Clean data to pure Thai names and titles (strip English in parentheses)
+    const staffList = result.recordset.map(st => {
+      const thaiName = (st.name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim();
+      const nick = st.nickname || thaiName.replace('ช่าง', '').trim();
+      
+      let thaiTitle = 'ช่างประจำร้าน';
+      if (nick === 'จอย' || thaiName.includes('จอย')) thaiTitle = 'ช่างทำเล็บอาวุโส';
+      else if (nick === 'มิน' || thaiName.includes('มิน')) thaiTitle = 'ช่างเพ้นท์ลายเกาหลี';
+      else if (nick === 'แพรว' || thaiName.includes('แพรว')) thaiTitle = 'ผู้เชี่ยวชาญการต่อเล็บ';
+      else if (nick === 'พลอย' || thaiName.includes('พลอย')) thaiTitle = 'ช่างสปามือและเท้า';
+      else if (st.title) {
+        thaiTitle = st.title.replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim();
+      }
+
+      return {
+        ...st,
+        name: thaiName,
+        nickname: nick,
+        title: thaiTitle,
+        initials: nick.slice(0, 2)
+      };
+    });
+
+    res.json(staffList);
   } catch (e) { next(e); }
 });
 
@@ -83,7 +107,13 @@ apiRouter.get('/bookings', async (_req, res, next) => {
       LEFT JOIN staff st ON b.staff_id = st.id
       ORDER BY b.booking_date DESC, b.booking_slot ASC
     `);
-    res.json(result.recordset);
+
+    const cleanedBookings = result.recordset.map(b => ({
+      ...b,
+      staff_name: (b.staff_name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim()
+    }));
+
+    res.json(cleanedBookings);
   } catch (e) { next(e); }
 });
 

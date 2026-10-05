@@ -66,10 +66,39 @@ export default function App() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Helper date calculations
+  // Helper date calculations & Thai date formatters
   const todayStr = new Date().toISOString().split('T')[0];
   const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
   const dayAfterTomorrowStr = new Date(Date.now() + 172800000).toISOString().split('T')[0];
+
+  const THAI_MONTHS = [
+    { val: '01', name: 'มกราคม', short: 'ม.ค.' },
+    { val: '02', name: 'กุมภาพันธ์', short: 'ก.พ.' },
+    { val: '03', name: 'มีนาคม', short: 'มี.ค.' },
+    { val: '04', name: 'เมษายน', short: 'เม.ย.' },
+    { val: '05', name: 'พฤษภาคม', short: 'พ.ค.' },
+    { val: '06', name: 'มิถุนายน', short: 'มิ.ย.' },
+    { val: '07', name: 'กรกฎาคม', short: 'ก.ค.' },
+    { val: '08', name: 'สิงหาคม', short: 'ส.ค.' },
+    { val: '09', name: 'กันยายน', short: 'ก.ย.' },
+    { val: '10', name: 'ตุลาคม', short: 'ต.ค.' },
+    { val: '11', name: 'พฤศจิกายน', short: 'พ.ย.' },
+    { val: '12', name: 'ธันวาคม', short: 'ธ.ค.' }
+  ];
+
+  const formatDmy = (dateStr) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  };
+
+  const formatThaiDate = (dateStr) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    const mObj = THAI_MONTHS.find(item => item.val === m);
+    const thaiYear = parseInt(y, 10) + 543;
+    return `${parseInt(d, 10)} ${mObj ? mObj.name : m} ${thaiYear}`;
+  };
 
   // Helper icon for services
   const getServiceIcon = (type) => {
@@ -479,15 +508,18 @@ export default function App() {
               <div>
                 <label className="block text-xs font-semibold text-stone-700 mb-2 flex items-center gap-1.5">
                   <IconUser className="w-3.5 h-3.5 text-stone-500" />
-                  <span>ช่างประจำร้าน (Staff)</span>
+                  <span>ช่างประจำร้าน</span>
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {staffList.map(st => {
                     const isSelected = selectedStaff?.id === st.id;
+                    const thaiName = (st.name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim();
+                    const thaiTitle = (st.title || st.nickname || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim();
+                    const thaiInitials = (st.nickname || thaiName.replace('ช่าง', '')).slice(0, 2);
                     return (
                       <div
                         key={st.id}
-                        onClick={() => setSelectedStaff(st)}
+                        onClick={() => setSelectedStaff({ ...st, name: thaiName, title: thaiTitle })}
                         className={`flat-card p-3.5 rounded-xl cursor-pointer text-center flex flex-col items-center justify-between ${
                           isSelected ? 'active ring-1 ring-rose-500' : ''
                         }`}
@@ -495,26 +527,29 @@ export default function App() {
                         <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs mb-2 ${
                           st.avatarBg || 'bg-stone-100 text-stone-700 border border-stone-200'
                         }`}>
-                          {st.initials || st.name.slice(0, 2)}
+                          {thaiInitials}
                         </div>
-                        <h4 className="font-bold text-xs text-stone-800">{st.name}</h4>
-                        <p className="text-[11px] text-rose-600 font-medium">{st.title || st.nickname}</p>
-                        <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                          <IconStar className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
-                          <span>{st.rating} ({st.reviewCount || 0})</span>
-                        </div>
+                        <h4 className="font-bold text-xs text-stone-800">{thaiName}</h4>
+                        <p className="text-[11px] text-rose-600 font-medium">{thaiTitle}</p>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* 2. Date Selection */}
-              <div className="p-3.5 bg-white border border-stone-200 rounded-xl space-y-2">
-                <label className="block text-xs font-semibold text-stone-700 flex items-center gap-1.5">
-                  <IconCalendar className="w-3.5 h-3.5 text-stone-500" />
-                  <span>วันที่นัดหมาย (Date)</span>
-                </label>
+              {/* 2. Date Selection (วัน / เดือน / ปี) */}
+              <div className="p-3.5 bg-white border border-stone-200 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <label className="text-xs font-semibold text-stone-700 flex items-center gap-1.5">
+                    <IconCalendar className="w-3.5 h-3.5 text-stone-500" />
+                    <span>วันที่นัดหมาย (วัน / เดือน / ปี)</span>
+                  </label>
+                  <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg">
+                    {formatDmy(selectedDate)} — {formatThaiDate(selectedDate)}
+                  </span>
+                </div>
+
+                {/* Quick Selection Buttons */}
                 <div className="flex flex-wrap items-center gap-2">
                   {[
                     { label: 'วันนี้', dateVal: todayStr },
@@ -525,7 +560,7 @@ export default function App() {
                       key={q.label}
                       type="button"
                       onClick={() => setSelectedDate(q.dateVal)}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                         selectedDate === q.dateVal
                           ? 'bg-rose-500 text-white font-semibold'
                           : 'bg-stone-50 hover:bg-stone-100 text-stone-600 border border-stone-200'
@@ -534,13 +569,56 @@ export default function App() {
                       {q.label}
                     </button>
                   ))}
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    min={todayStr}
-                    onChange={e => setSelectedDate(e.target.value)}
-                    className="px-3 py-1 rounded-lg border border-stone-200 bg-white text-xs font-medium focus:border-rose-500 focus:outline-none"
-                  />
+                </div>
+
+                {/* 3 Dropdown Selectors: วัน (Day) / เดือน (Month) / ปี (Year) */}
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">วัน (Day)</label>
+                    <select
+                      value={selectedDate.split('-')[2] || '01'}
+                      onChange={e => {
+                        const parts = selectedDate.split('-');
+                        setSelectedDate(`${parts[0]}-${parts[1]}-${e.target.value}`);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white text-xs font-medium text-stone-800 focus:border-rose-500 focus:outline-none"
+                    >
+                      {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map(d => (
+                        <option key={d} value={d}>วันที่ {Number(d)}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">เดือน (Month)</label>
+                    <select
+                      value={selectedDate.split('-')[1] || '01'}
+                      onChange={e => {
+                        const parts = selectedDate.split('-');
+                        setSelectedDate(`${parts[0]}-${e.target.value}-${parts[2]}`);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white text-xs font-medium text-stone-800 focus:border-rose-500 focus:outline-none"
+                    >
+                      {THAI_MONTHS.map(m => (
+                        <option key={m.val} value={m.val}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">ปี (Year)</label>
+                    <select
+                      value={selectedDate.split('-')[0] || '2026'}
+                      onChange={e => {
+                        const parts = selectedDate.split('-');
+                        setSelectedDate(`${e.target.value}-${parts[1]}-${parts[2]}`);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white text-xs font-medium text-stone-800 focus:border-rose-500 focus:outline-none"
+                    >
+                      <option value="2026">2569 (2026)</option>
+                      <option value="2027">2570 (2027)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -620,7 +698,7 @@ export default function App() {
               <div className="hidden sm:flex items-center gap-2 text-xs text-stone-500">
                 <span>ช่าง: <strong className="text-stone-800">{selectedStaff?.name}</strong></span>
                 <span>•</span>
-                <span>วัน: <strong className="text-stone-800">{selectedDate}</strong></span>
+                <span>วัน: <strong className="text-stone-800">{formatDmy(selectedDate)}</strong></span>
                 {selectedSlot && (
                   <>
                     <span>•</span>
@@ -855,11 +933,11 @@ export default function App() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-400">ช่างประจำ:</span>
-                  <span className="font-medium text-stone-800">{lastBooking.staff_name}</span>
+                  <span className="font-medium text-stone-800">{(lastBooking.staff_name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-400">วัน & เวลา:</span>
-                  <span className="font-medium text-stone-800">{lastBooking.booking_date} @ {lastBooking.booking_slot} น.</span>
+                  <span className="font-medium text-stone-800">{formatDmy(lastBooking.booking_date)} @ {lastBooking.booking_slot} น.</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-400">ผู้จอง:</span>
@@ -943,11 +1021,11 @@ export default function App() {
                         <span className="font-bold text-stone-900">#{b.id}</span>
                         <span className="font-medium text-rose-600">{b.service_title}</span>
                         <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-100 text-stone-600 border border-stone-200">
-                          {b.booking_date} @ {b.booking_slot} น.
+                          {formatDmy(b.booking_date)} @ {b.booking_slot} น.
                         </span>
                       </div>
                       <p className="text-[11px] text-stone-500 mt-0.5">
-                        ผู้จอง: <span className="font-medium text-stone-800">{b.customer_name}</span> ({b.customer_phone}) • ช่าง: {b.staff_name}
+                        ผู้จอง: <span className="font-medium text-stone-800">{b.customer_name}</span> ({b.customer_phone}) • ช่าง: {(b.staff_name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim()}
                       </p>
                     </div>
                     <button
@@ -1084,29 +1162,28 @@ function FlatSummarySidebar({ service, staff, date, slot, step, onNext, nextDisa
           </div>
         </div>
 
-        {/* Selected Staff */}
+        {/* Selected Staff (Rating Badge Removed, Pure Thai Name) */}
         <div className="flex items-center justify-between p-2.5 bg-white border border-stone-200 rounded-xl text-xs">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-stone-100 text-stone-700 border border-stone-200 flex items-center justify-center font-bold text-[10px]">
-              {staff?.initials || 'ST'}
+              {((staff?.nickname || staff?.name || 'ช่าง').replace('ช่าง', '')).slice(0, 2)}
             </div>
             <div>
-              <p className="font-semibold text-stone-800">{staff?.name}</p>
-              <p className="text-[10px] text-stone-400">{staff?.title}</p>
+              <p className="font-semibold text-stone-800">{(staff?.name || '').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim()}</p>
+              <p className="text-[10px] text-stone-400">{(staff?.title || staff?.nickname || 'ช่างประจำร้าน').replace(/\s*\([A-Za-z0-9\s&]+\)/g, '').trim()}</p>
             </div>
           </div>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-bold flex items-center gap-1">
-            <IconStar className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
-            <span>{staff?.rating}</span>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-600 border border-stone-200 font-medium">
+            ช่างที่เลือก
           </span>
         </div>
 
-        {/* Selected Date & Time */}
+        {/* Selected Date & Time (วัน / เดือน / ปี) */}
         <div className="flex items-center justify-between p-2.5 bg-white border border-stone-200 rounded-xl text-xs">
           <div className="flex items-center gap-2">
             <IconCalendar className="w-4 h-4 text-stone-500" />
             <div>
-              <p className="font-semibold text-stone-800">{date || 'วันนี้'}</p>
+              <p className="font-semibold text-stone-800">{formatDmy(date)} ({formatThaiDate(date)})</p>
               <p className="text-[10px] text-stone-400">{slot ? `เวลา ${slot} น.` : 'ยังไม่ระบุรอบเวลา'}</p>
             </div>
           </div>
